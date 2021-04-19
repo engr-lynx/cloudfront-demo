@@ -4,7 +4,7 @@ import { CloudfrontDemoStack } from './cloudfront-demo-stack';
 /**
  * Deployable unit of website app
  */
-export class CdkpipelinesDemoStage extends Stage {
+export class CloudfrontDemoStage extends Stage {
 
   public readonly websiteURL: CfnOutput;
   
