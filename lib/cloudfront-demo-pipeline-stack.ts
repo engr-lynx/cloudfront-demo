@@ -3,12 +3,12 @@ import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 import { LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
 import { CdkPipeline, SimpleSynthAction } from "@aws-cdk/pipelines";
-import { CloudfrontDemoStage } from './cloudfront-demo-stage';
+import { CloudFrontS3Stage } from './cloudfront-s3-stage';
 
 /**
  * The stack that defines the application pipeline
  */
-export class CloudfrontDemoPipelineStack extends Stack {
+export class CloudFrontDemoPipelineStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -34,7 +34,7 @@ export class CloudfrontDemoPipelineStack extends Stack {
 
     // This is where we add the application stages
     // ...
-    pipeline.addApplicationStage(new CloudfrontDemoStage(this, 'prod', {}));
+    pipeline.addApplicationStage(new CloudFrontS3Stage(this, 'prod', {}));
   }
 
 }
