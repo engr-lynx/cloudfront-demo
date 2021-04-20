@@ -1,5 +1,6 @@
 import { Artifact } from '@aws-cdk/aws-codepipeline';
 import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
+import { LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
 import { CdkPipeline, SimpleSynthAction } from "@aws-cdk/pipelines";
 
@@ -24,8 +25,9 @@ export class CloudfrontDemoPipelineStack extends Stack {
       }),
       synthAction: SimpleSynthAction.standardNpmSynth({
         sourceArtifact,
-        cloudAssemblyArtifact,         
-        buildCommand: 'npm run build'
+        cloudAssemblyArtifact,
+        environment: { buildImage: LinuxBuildImage.STANDARD_5_0 },
+        buildCommand: 'npm run build',
       }),
     });
 
