@@ -3,6 +3,7 @@ import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 import { LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
 import { CdkPipeline, SimpleSynthAction } from "@aws-cdk/pipelines";
+import { CloudfrontDemoStage } from './cloudfront-demo-stage';
 
 /**
  * The stack that defines the application pipeline
@@ -13,7 +14,7 @@ export class CloudfrontDemoPipelineStack extends Stack {
     super(scope, id, props);
     const sourceArtifact = new Artifact();
     const cloudAssemblyArtifact = new Artifact();
-    new CdkPipeline(this, 'Pipeline', {
+    const pipeline = new CdkPipeline(this, 'Pipeline', {
       pipelineName: 'WebsitePipeline',
       cloudAssemblyArtifact,
       sourceAction: new GitHubSourceAction({
@@ -33,6 +34,7 @@ export class CloudfrontDemoPipelineStack extends Stack {
 
     // This is where we add the application stages
     // ...
+    pipeline.addApplicationStage(new CloudfrontDemoStage(this, 'prod', {}));
   }
 
 }
