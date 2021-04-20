@@ -20,7 +20,7 @@ export class CloudfrontDemoPipelineStack extends Stack {
         output: sourceArtifact,
         oauthToken: SecretValue.secretsManager('github-token'),
         owner: 'engr-lynx',
-        repo: 'https://github.com/engr-lynx/cloudfront-demo',
+        repo: 'cloudfront-demo',
       }),
       synthAction: SimpleSynthAction.standardNpmSynth({
         sourceArtifact,
