@@ -1,22 +1,17 @@
-import { Construct, Stack, StackProps, SecretValue, CfnOutput } from '@aws-cdk/core';
-import { CloudFrontToS3 } from '@aws-solutions-constructs/aws-cloudfront-s3';
+import { Construct, Stack, StackProps, SecretValue } from '@aws-cdk/core';
+import { IBucket } from '@aws-cdk/aws-s3';
 import { PipelineProject, BuildSpec, LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
-import { GitHubSourceAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions';
+import { GitHubSourceAction, CodeBuildAction, S3DeployAction } from '@aws-cdk/aws-codepipeline-actions';
 
-export class CloudFrontS3Stack extends Stack {
+export class VuepressPipelineStack extends Stack {
 
-  public readonly URL: CfnOutput;
-
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, targetBucket: IBucket, props?: StackProps) {
     super(scope, id, props);
-    const construct = new CloudFrontToS3(this, 'CloudFrontToS3', {
-      insertHttpSecurityHeaders: false,
-    });
     const sourceArtifact = new Artifact();
     const oauthToken = SecretValue.secretsManager('github-token');
     const sourceAction = new GitHubSourceAction({
-      actionName: 'Github',
+      actionName: 'VuepressSource',
       output: sourceArtifact,
       oauthToken,
       owner: 'engr-lynx',
@@ -68,15 +63,23 @@ export class CloudFrontS3Stack extends Stack {
         buildAction
       ],
     }
-    new Pipeline(this, 'VuepressPipeline', {
+    const deployAction = new S3DeployAction({
+      actionName: 'VuepressDeploy',
+      input: vuepressBuildOutput,
+      bucket: targetBucket,
+    })
+    const deployStage = {
+      stageName: 'Deploy',
+      actions: [
+        deployAction
+      ],
+    }
+    const pipeline = new Pipeline(this, 'VuepressPipeline', {
       stages: [
         sourceStage,
         buildStage,
+        deployStage,
       ]
-    });
-
-    this.URL = new CfnOutput(this, 'URL', {
-      value: 'https://' + construct.cloudFrontWebDistribution.domainName,
     });
   }
 

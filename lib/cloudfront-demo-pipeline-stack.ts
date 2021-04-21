@@ -3,7 +3,7 @@ import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 import { LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
 import { CdkPipeline, SimpleSynthAction } from "@aws-cdk/pipelines";
-import { CloudFrontS3Stage } from './cloudfront-s3-stage';
+import { VuepressSiteStage } from './vuepress-site-stage';
 
 /**
  * The stack that defines the application pipeline
@@ -34,7 +34,7 @@ export class CloudFrontDemoPipelineStack extends Stack {
 
     // This is where we add the application stages
     // ...
-    pipeline.addApplicationStage(new CloudFrontS3Stage(this, 'prod', {}));
+    pipeline.addApplicationStage(new VuepressSiteStage(this, 'VuepressSiteProd'));
   }
 
 }
