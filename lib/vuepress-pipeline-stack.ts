@@ -35,9 +35,7 @@ export class VuepressPipelineStack extends Stack {
       },
       artifacts: {
         'base-directory': 'dist',
-        files: [
-          'node_modules/**/*',
-        ],
+        files: '**/*',
       },
     });
     const buildImage = LinuxBuildImage.STANDARD_5_0;
