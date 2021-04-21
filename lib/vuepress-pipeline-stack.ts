@@ -72,7 +72,7 @@ export class VuepressPipelineStack extends Stack {
         deployAction
       ],
     }
-    const pipeline = new Pipeline(this, 'VuepressPipeline', {
+    new Pipeline(this, 'VuepressPipeline', {
       stages: [
         sourceStage,
         buildStage,
