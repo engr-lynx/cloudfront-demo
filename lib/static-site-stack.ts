@@ -10,7 +10,7 @@ export class StaticSiteStack extends Stack {
   constructor(scope: Construct, id: string, logStreamConfig: CfnRealtimeLogConfig.KinesisStreamConfigProperty,
       props?: StackProps) {
     super(scope, id, props);
-    const staticSite = new CloudFrontToS3(this, 'StaticSite', {
+    const staticSite = new CloudFrontToS3(this, 'CloudFrontToS3', {
       insertHttpSecurityHeaders: false,
     });
     this.sourceBucket = staticSite.s3Bucket as Bucket;
