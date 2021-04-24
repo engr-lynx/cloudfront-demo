@@ -1,60 +1,69 @@
-import { Construct, Stack, StackProps, CfnOutput, Arn } from '@aws-cdk/core';
-import { Stream } from '@aws-cdk/aws-kinesis';
-import { Role, ServicePrincipal, PolicyStatement } from '@aws-cdk/aws-iam';
+import { Construct, Stack, StackProps, Arn } from '@aws-cdk/core';
+import { Stream, StreamEncryption } from '@aws-cdk/aws-kinesis';
+import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { CfnRealtimeLogConfig } from '@aws-cdk/aws-cloudfront';
 
-export interface StreamConfig {
-  streamArn: string,
-  roleArn: string,
+export interface LogProps {
+  fields: string[],
+  samplingRate: number,
 }
 
 export class RealtimeLogStack extends Stack {
 
-  public readonly logStreamConfig: StreamConfig;
-
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, logProps: LogProps, props?: StackProps) {
     super(scope, id, props);
-    const logStreamName = 'LogStream'
-    const logStream = new Stream(this, logStreamName, {
+    const streamName = 'LogStream';
+    new Stream(this, streamName, {
+      streamName,
       shardCount: 1,
-      streamName: logStreamName,
+      encryption: StreamEncryption.UNENCRYPTED,
     });
-    const logStreamArn = Arn.format({
-      resource: 'stream',
+    const streamArn = Arn.format({
       service: 'kinesis',
-      resourceName: logStreamName,
+      resource: 'stream',
+      resourceName: streamName,
     }, this);
-    const logStreamRoleName = 'LogStreamRole';
-    const role = new Role(this, logStreamRoleName, {
-      assumedBy: new ServicePrincipal('cloudfront.amazonaws.com'),
-      roleName: logStreamRoleName,
+    const roleName = 'LogRole';
+    const rolePrincipal = new ServicePrincipal('cloudfront.amazonaws.com')
+    const logRole = new Role(this, roleName, {
+      assumedBy: rolePrincipal,
+      roleName,
     });
-    role.addToPolicy(new PolicyStatement({
+    const streamPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
       resources: [
-        logStreamArn
+        streamArn,
       ],
       actions: [
-          'kinesis:DescribeStreamSummary',
-          'kinesis:DescribeStream',
-          'kinesis:PutRecord',
-          'kinesis:PutRecords',
-        ],
-      })
-    );
-    const logStreamRoleArn = Arn.format({
-      resource: 'role',
+        'kinesis:DescribeStreamSummary',
+        'kinesis:DescribeStream',
+        'kinesis:PutRecord',
+        'kinesis:PutRecords',
+      ],
+    });
+    logRole.addToPolicy(streamPolicy);
+    const roleArn = Arn.format({
       service: 'iam',
-      resourceName: logStreamRoleName,
+      resource: 'role',
+      resourceName: roleName,
     }, this);
-    this.logStreamConfig = {
-      streamArn: logStreamArn,
-      roleArn: logStreamRoleArn,
+    const logConfig = {
+      streamArn,
+      roleArn,
     }
-    new CfnOutput(this, 'logStreamArn', {
-      value: logStreamArn,
-    });
-    new CfnOutput(this, 'kibanaURL', {
-      value: '',
-    });
+    const endPoint = {
+      kinesisStreamConfig: logConfig,
+      streamType: 'Kinesis',
+    }
+    const configName = 'LogConfig';
+    new CfnRealtimeLogConfig(this, configName, {
+      name: configName,
+      endPoints: [
+        endPoint,
+      ],
+      fields: logProps.fields,
+      samplingRate: logProps.samplingRate,
+    })
   }
 
 }

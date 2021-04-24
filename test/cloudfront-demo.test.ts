@@ -1,11 +1,11 @@
 import { expect as expectCDK, matchTemplate, MatchStyle } from '@aws-cdk/assert';
-import * as cdk from '@aws-cdk/core';
-import { CloudFrontDemoPipelineStack } from '../lib/cloudfront-demo-pipeline-stack';
+import { App } from '@aws-cdk/core';
+import { WebsiteInfraPipelineStack } from '../lib/website-infra-pipeline-stack';
 
 test('Empty Stack', () => {
-    const app = new cdk.App();
+    const app = new App();
     // WHEN
-    const stack = new CloudFrontDemoPipelineStack(app, 'MyTestStack');
+    const stack = new WebsiteInfraPipelineStack(app, 'WebsiteInfraPipeline');
     // THEN
     expectCDK(stack).to(matchTemplate({
       "Resources": {}
