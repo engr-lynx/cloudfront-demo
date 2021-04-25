@@ -1,6 +1,7 @@
 import { Construct, Stage, StageProps } from '@aws-cdk/core';
 import { GithubNpmS3PipelineStack } from './github-npm-s3-pipeline-stack';
 import { WebDistributionStack } from './web-distribution-stack';
+import { RealtimeMetricStack } from './realtime-metric-stack';
 import { RealtimeLogStack } from './realtime-log-stack';
 
 /**
@@ -20,6 +21,9 @@ export class VuepressSiteStage extends Stage {
       s3Bucket: website.sourceBucket,
     });
     vuepressPipeline.addDependency(website);
+    new RealtimeMetricStack(this, 'RealtimeMetric', {
+      distributionId: website.distributionId,
+    })
     new RealtimeLogStack(this, 'RealtimeLog', {
       fields: [
         'timestamp',

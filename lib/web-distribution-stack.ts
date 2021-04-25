@@ -5,6 +5,7 @@ import { CloudFrontToS3 } from '@aws-solutions-constructs/aws-cloudfront-s3';
 export class WebDistributionStack extends Stack {
 
   public readonly sourceBucket: Bucket;
+  public readonly distributionId: string;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -12,6 +13,7 @@ export class WebDistributionStack extends Stack {
       insertHttpSecurityHeaders: false, // implemented using Lambda@Edge w/c can only be used in us-east-1
     });
     this.sourceBucket = webDistribution.s3Bucket as Bucket;
+    this.distributionId = webDistribution.cloudFrontWebDistribution.distributionId;
     new CfnOutput(this, 'URL', {
       value: 'https://' + webDistribution.cloudFrontWebDistribution.domainName,
     });

@@ -8,7 +8,7 @@ export interface MetricProps {
   distributionId: string,
 }
 
-export class RealtimeLogStack extends Stack {
+export class RealtimeMetricStack extends Stack {
 
   constructor(scope: Construct, id: string, metricProps: MetricProps, props?: StackProps) {
     super(scope, id, props);
