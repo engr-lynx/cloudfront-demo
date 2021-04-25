@@ -1,4 +1,4 @@
-import { Construct, Stack, StackProps, Duration, CustomResource, Arn } from '@aws-cdk/core';
+import { Construct, Stack, StackProps, Duration, CustomResource } from '@aws-cdk/core';
 import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
 import { Provider } from '@aws-cdk/custom-resources';
 import { RetentionDays } from '@aws-cdk/aws-logs';
@@ -12,18 +12,14 @@ export class RealtimeMetricStack extends Stack {
 
   constructor(scope: Construct, id: string, metricProps: MetricProps, props?: StackProps) {
     super(scope, id, props);
-    const distributionArn = Arn.format({
-      service: 'cloudfront',
-      resource: 'distribution',
-      resourceName: metricProps.distributionId,
-    }, this);
     const subscriptionPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         'cloudfront:CreateMonitoringSubscription',
+        'cloudfront:DeleteMonitoringSubscription',
       ],
       resources: [
-        distributionArn,
+        '*',
       ]
     });
     const subscriptionHandler = new Function(this, 'SubscriptionHandler', {
