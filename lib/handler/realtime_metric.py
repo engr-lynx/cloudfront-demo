@@ -38,8 +38,8 @@ def subscribe(distribution_id):
   cloudfront.create_monitoring_subscription(
     DistributionId=distribution_id,
     MonitoringSubscription={
-        'RealtimeMetricsSubscriptionConfig': {
-          'RealtimeMetricsSubscriptionStatus': 'Enabled'
+      'RealtimeMetricsSubscriptionConfig': {
+        'RealtimeMetricsSubscriptionStatus': 'Enabled'
       }
     }
   )

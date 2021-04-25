@@ -12,7 +12,7 @@ export class VuepressSiteStage extends Stage {
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
     const website = new WebDistributionStack(this, 'Website');
-    const vuepressPipeline = new GithubNpmS3PipelineStack(this, 'VuepressPipeline', {
+    new GithubNpmS3PipelineStack(this, 'VuepressPipeline', {
       githubTokenName: 'github-token',
       githubOwner: 'engr-lynx',
       githubRepo: 'vuepress-homepage',
@@ -20,11 +20,11 @@ export class VuepressSiteStage extends Stage {
       npmArtifactFiles: '**/*',
       s3Bucket: website.sourceBucket,
     });
-    vuepressPipeline.addDependency(website);
     new RealtimeMetricStack(this, 'RealtimeMetric', {
       distributionId: website.distributionId,
     })
     new RealtimeLogStack(this, 'RealtimeLog', {
+      distributionId: website.distributionId,
       fields: [
         'timestamp',
         'c-ip',

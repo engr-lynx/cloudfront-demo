@@ -4,6 +4,7 @@ import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-ia
 import { CfnRealtimeLogConfig } from '@aws-cdk/aws-cloudfront';
 
 export interface LogProps {
+  distributionId: string,
   fields: string[],
   samplingRate: number,
 }
