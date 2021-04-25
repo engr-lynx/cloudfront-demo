@@ -9,9 +9,7 @@ export class WebDistributionStack extends Stack {
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    const webDistribution = new CloudFrontToS3(this, 'WebDistribution', {
-      insertHttpSecurityHeaders: false, // implemented using Lambda@Edge w/c can only be used in us-east-1
-    });
+    const webDistribution = new CloudFrontToS3(this, 'WebDistribution', {});
     this.sourceBucket = webDistribution.s3Bucket as Bucket;
     this.distributionId = webDistribution.cloudFrontWebDistribution.distributionId;
     new CfnOutput(this, 'URL', {
