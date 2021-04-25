@@ -63,7 +63,7 @@ export class RealtimeLogStack extends Stack {
       ],
       fields: logProps.fields,
       samplingRate: logProps.samplingRate,
-    })
+    });
   }
 
 }
