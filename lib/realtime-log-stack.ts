@@ -72,6 +72,7 @@ export class RealtimeLogStack extends Stack {
     const distributionArn = Arn.format({
       service: 'cloudfront',
       resource: 'distribution',
+      region: '',
       resourceName: logProps.distributionId,
     }, this);
     const subscriptionPolicy = new PolicyStatement({
