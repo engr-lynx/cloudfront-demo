@@ -1,7 +1,10 @@
-import { Construct, Stack, StackProps, Arn } from '@aws-cdk/core';
+import { Construct, Stack, StackProps, Arn, Duration, CustomResource } from '@aws-cdk/core';
 import { Stream, StreamEncryption } from '@aws-cdk/aws-kinesis';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { CfnRealtimeLogConfig } from '@aws-cdk/aws-cloudfront';
+import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
+import { Provider } from '@aws-cdk/custom-resources';
+import { RetentionDays } from '@aws-cdk/aws-logs';
 
 export interface LogProps {
   distributionId: string,
@@ -65,6 +68,43 @@ export class RealtimeLogStack extends Stack {
       fields: logProps.fields,
       samplingRate: logProps.samplingRate,
     });
+
+    const distributionArn = Arn.format({
+      service: 'cloudfront',
+      resource: 'distribution',
+      resourceName: logProps.distributionId,
+    }, this);
+    const subscriptionPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'cloudfront:GetDistributionConfig',
+        'cloudfront:UpdateDistribution',
+      ],
+      resources: [
+        distributionArn,
+      ]
+    });
+    const subscriptionHandler = new Function(this, 'SubscriptionHandler', {
+      runtime: Runtime.PYTHON_3_8,
+      handler: 'realtime_log.on_event',
+      code: Code.fromAsset(`${__dirname}/handler`),
+      timeout: Duration.minutes(1),
+      initialPolicy: [
+        subscriptionPolicy,
+      ]
+    });
+    const subscriptionProvider = new Provider(this, 'SubscriptionProvider', {
+      onEventHandler: subscriptionHandler,
+      logRetention: RetentionDays.ONE_DAY,
+    });
+    const subscriptionProps = {
+      DistributionId: logProps.distributionId,
+    }
+    new CustomResource(this, 'SubscriptionResource', {
+      serviceToken: subscriptionProvider.serviceToken,
+      properties: subscriptionProps,
+    });
+
   }
 
 }
