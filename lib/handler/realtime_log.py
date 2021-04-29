@@ -34,12 +34,14 @@ def on_delete(event):
     raise e
   return
 
+# ToDo: update distribution to attach realtime log config
 def subscribe(distribution_id):
   cloudfront.get_distribution_config(
     Id=distribution_id
   )
   return
 
+# ToDo: update distribution to detach realtime log config
 def unsubscribe(distribution_id):
   cloudfront.get_distribution_config(
     Id=distribution_id
