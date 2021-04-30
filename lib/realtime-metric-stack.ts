@@ -4,25 +4,25 @@ import { Provider } from '@aws-cdk/custom-resources';
 import { RetentionDays } from '@aws-cdk/aws-logs';
 import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 
-export interface MetricProps {
+export interface RealtimeMetricProps {
   distributionId: string,
 }
 
 export class RealtimeMetricStack extends Stack {
 
-  constructor(scope: Construct, id: string, metricProps: MetricProps, props?: StackProps) {
+  constructor(scope: Construct, id: string, realtimeMetricProps: RealtimeMetricProps, props?: StackProps) {
     super(scope, id, props);
-    const subscriptionPolicy = new PolicyStatement({
+    const metricPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         'cloudfront:CreateMonitoringSubscription',
         'cloudfront:DeleteMonitoringSubscription',
       ],
       resources: [
-        '*',
+        '*', // limit
       ],
     });
-    const functionName = 'SubscriptionHandler';
+    const functionName = 'MetricHandler';
     const logGroupArn = Arn.format({
       service: 'logs',
       resource: 'log-group',
@@ -54,7 +54,7 @@ export class RealtimeMetricStack extends Stack {
         logStreamArn,
       ],
     });
-    const subscriptionHandler = new Function(this, functionName, {
+    const metricHandler = new Function(this, functionName, {
       functionName,
       runtime: Runtime.PYTHON_3_8,
       handler: 'realtime_metric.on_event',
@@ -62,21 +62,18 @@ export class RealtimeMetricStack extends Stack {
       timeout: Duration.minutes(1),
       logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
-        subscriptionPolicy,
+        metricPolicy,
         logGroupPolicy,
         logStreamPolicy,
       ],
     });
-    const subscriptionProvider = new Provider(this, 'SubscriptionProvider', {
-      onEventHandler: subscriptionHandler,
+    const metricProvider = new Provider(this, 'MetricProvider', {
+      onEventHandler: metricHandler,
       logRetention: RetentionDays.ONE_DAY,
     });
-    const subscriptionProps = {
-      DistributionId: metricProps.distributionId,
-    }
-    new CustomResource(this, 'SubscriptionResource', {
-      serviceToken: subscriptionProvider.serviceToken,
-      properties: subscriptionProps,
+    new CustomResource(this, 'MetricResource', {
+      serviceToken: metricProvider.serviceToken,
+      properties: realtimeMetricProps,
     });
   }
 

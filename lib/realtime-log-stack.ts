@@ -6,7 +6,7 @@ import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
 import { Provider } from '@aws-cdk/custom-resources';
 import { RetentionDays } from '@aws-cdk/aws-logs';
 
-export interface LogProps {
+export interface RealtimeLogProps {
   distributionId: string,
   fields: string[],
   samplingRate: number,
@@ -14,7 +14,7 @@ export interface LogProps {
 
 export class RealtimeLogStack extends Stack {
 
-  constructor(scope: Construct, id: string, logProps: LogProps, props?: StackProps) {
+  constructor(scope: Construct, id: string, realtimeLogProps: RealtimeLogProps, props?: StackProps) {
     super(scope, id, props);
     const streamName = 'LogStream';
     new Stream(this, streamName, {
@@ -65,16 +65,16 @@ export class RealtimeLogStack extends Stack {
       endPoints: [
         endPoint,
       ],
-      fields: logProps.fields,
-      samplingRate: logProps.samplingRate,
+      fields: realtimeLogProps.fields,
+      samplingRate: realtimeLogProps.samplingRate,
     });
     const distributionArn = Arn.format({
       service: 'cloudfront',
       resource: 'distribution',
       region: '',
-      resourceName: logProps.distributionId,
+      resourceName: realtimeLogProps.distributionId,
     }, this);
-    const subscriptionPolicy = new PolicyStatement({
+    const logPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         'cloudfront:GetDistributionConfig',
@@ -84,7 +84,7 @@ export class RealtimeLogStack extends Stack {
         distributionArn,
       ],
     });
-    const functionName = 'SubscriptionHandler';
+    const functionName = 'LogHandler';
     const logGroupArn = Arn.format({
       service: 'logs',
       resource: 'log-group',
@@ -116,7 +116,7 @@ export class RealtimeLogStack extends Stack {
         logStreamArn,
       ],
     });
-    const subscriptionHandler = new Function(this, functionName, {
+    const logHandler = new Function(this, functionName, {
       functionName,
       runtime: Runtime.PYTHON_3_8,
       handler: 'realtime_log.on_event',
@@ -124,21 +124,21 @@ export class RealtimeLogStack extends Stack {
       timeout: Duration.minutes(1),
       logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
-        subscriptionPolicy,
+        logPolicy,
         logGroupPolicy,
         logStreamPolicy,
       ],
     });
-    const subscriptionProvider = new Provider(this, 'SubscriptionProvider', {
-      onEventHandler: subscriptionHandler,
+    const logProvider = new Provider(this, 'LogProvider', {
+      onEventHandler: logHandler,
       logRetention: RetentionDays.ONE_DAY,
     });
-    const subscriptionProps = {
-      DistributionId: logProps.distributionId,
+    const logProps = {
+      distributionId: realtimeLogProps.distributionId,
     }
-    new CustomResource(this, 'SubscriptionResource', {
-      serviceToken: subscriptionProvider.serviceToken,
-      properties: subscriptionProps,
+    new CustomResource(this, 'LogResource', {
+      serviceToken: logProvider.serviceToken,
+      properties: logProps,
     });
 
   }

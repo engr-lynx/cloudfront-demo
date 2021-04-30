@@ -17,7 +17,7 @@ def on_event(event, context):
   raise Exception('Invalid request type: %s' % request_type)
 
 def on_create(event):
-  distribution_id = event['ResourceProperties']['DistributionId']
+  distribution_id = event['ResourceProperties']['distributionId']
   try:
     subscribe(distribution_id)
   except ClientError as e:
@@ -26,7 +26,7 @@ def on_create(event):
   return
 
 def on_delete(event):
-  distribution_id = event['ResourceProperties']['DistributionId']
+  distribution_id = event['ResourceProperties']['distributionId']
   try:
     unsubscribe(distribution_id)
   except ClientError as e:

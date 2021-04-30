@@ -17,32 +17,32 @@ def on_event(event, context):
   raise Exception('Invalid request type: %s' % request_type)
 
 def on_create(event):
-  distribution_id = event['ResourceProperties']['DistributionId']
+  distribution_id = event['ResourceProperties']['distributionId']
   try:
-    subscribe(distribution_id)
+    enable(distribution_id)
   except ClientError as e:
     logger.error('Error: %s', e)
     raise e
   return
 
 def on_delete(event):
-  distribution_id = event['ResourceProperties']['DistributionId']
+  distribution_id = event['ResourceProperties']['distributionId']
   try:
-    unsubscribe(distribution_id)
+    disable(distribution_id)
   except ClientError as e:
     logger.error('Error: %s', e)
     raise e
   return
 
-# ToDo: update distribution to attach realtime log config
-def subscribe(distribution_id):
+# ToDo: update distribution to enable realtime log
+def enable(distribution_id):
   cloudfront.get_distribution_config(
     Id=distribution_id
   )
   return
 
-# ToDo: update distribution to detach realtime log config
-def unsubscribe(distribution_id):
+# ToDo: update distribution to disable realtime log
+def disable(distribution_id):
   cloudfront.get_distribution_config(
     Id=distribution_id
   )
