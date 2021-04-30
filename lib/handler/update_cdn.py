@@ -8,7 +8,7 @@ def update_handler(event, context):
   print(event)
   allFiles = ['/*']
   invalidation = client.create_invalidation(
-    DistributionId='DISTRIBUTION_ID',
+    DistributionId=event['CodePipeline.job']['data']['actionConfiguration']['configuration']['UserParameters']['distributionId'],
     InvalidationBatch={
       'Paths': {
         'Quantity': 1,

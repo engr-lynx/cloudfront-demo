@@ -5,6 +5,7 @@ import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { PipelineProject, BuildSpec, LinuxBuildImage } from '@aws-cdk/aws-codebuild';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import { GitHubSourceAction, CodeBuildAction, S3DeployAction, LambdaInvokeAction } from '@aws-cdk/aws-codepipeline-actions';
+import { RetentionDays } from '@aws-cdk/aws-logs';
 
 export interface GithubNpmWebDistributionPipelineProps {
   githubTokenName: string,
@@ -93,21 +94,56 @@ export class GithubNpmWebDistributionPipelineStack extends Stack {
     const updatePolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        'cloudfront:GetDistributionConfig',
-        'cloudfront:UpdateDistribution',
+        'cloudfront:CreateInvalidation',
       ],
       resources: [
         distributionArn,
-      ]
+      ],
     });
-    const updateHandler = new Function(this, 'UpdateHandler', {
+    const functionName = 'UpdateHandler';
+    const logGroupArn = Arn.format({
+      service: 'logs',
+      resource: 'log-group',
+      sep: ':',
+      resourceName: '*',
+    }, this);
+    const logGroupPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+      ],
+      resources: [
+        logGroupArn,
+      ],
+    });
+    const logStreamArn = Arn.format({
+      service: 'logs',
+      resource: 'log-group:/aws/lambda/'.concat(functionName),
+      sep: ':',
+      resourceName: '*',
+    }, this);
+    const logStreamPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+      ],
+      resources: [
+        logStreamArn,
+      ],
+    });
+    const updateHandler = new Function(this, functionName, {
+      functionName,
       runtime: Runtime.PYTHON_3_8,
       handler: 'update_cdn.update_handler',
       code: Code.fromAsset(`${__dirname}/handler`),
       timeout: Duration.minutes(1),
+      logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
         updatePolicy,
-      ]
+        logGroupPolicy,
+        logStreamPolicy,
+      ],
     });
     const invokeParams = {
       distributionId: githubNpmWebDistributionPipelineProps.distributionId,

@@ -68,7 +68,6 @@ export class RealtimeLogStack extends Stack {
       fields: logProps.fields,
       samplingRate: logProps.samplingRate,
     });
-
     const distributionArn = Arn.format({
       service: 'cloudfront',
       resource: 'distribution',
@@ -83,16 +82,52 @@ export class RealtimeLogStack extends Stack {
       ],
       resources: [
         distributionArn,
-      ]
+      ],
     });
-    const subscriptionHandler = new Function(this, 'SubscriptionHandler', {
+    const functionName = 'SubscriptionHandler';
+    const logGroupArn = Arn.format({
+      service: 'logs',
+      resource: 'log-group',
+      sep: ':',
+      resourceName: '*',
+    }, this);
+    const logGroupPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+      ],
+      resources: [
+        logGroupArn,
+      ],
+    });
+    const logStreamArn = Arn.format({
+      service: 'logs',
+      resource: 'log-group:/aws/lambda/'.concat(functionName),
+      sep: ':',
+      resourceName: '*',
+    }, this);
+    const logStreamPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+      ],
+      resources: [
+        logStreamArn,
+      ],
+    });
+    const subscriptionHandler = new Function(this, functionName, {
+      functionName,
       runtime: Runtime.PYTHON_3_8,
       handler: 'realtime_log.on_event',
       code: Code.fromAsset(`${__dirname}/handler`),
       timeout: Duration.minutes(1),
+      logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
         subscriptionPolicy,
-      ]
+        logGroupPolicy,
+        logStreamPolicy,
+      ],
     });
     const subscriptionProvider = new Provider(this, 'SubscriptionProvider', {
       onEventHandler: subscriptionHandler,
