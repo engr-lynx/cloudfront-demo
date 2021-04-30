@@ -1,14 +1,16 @@
 import boto3
+import json
 import time
 
 client = boto3.client('cloudfront')
 pipeline = boto3.client('codepipeline')
 
-def update_handler(event, context):
-  print(event)
+def on_event(event, context):
+  user_parameters = json.loads(event['CodePipeline.job']['data']['actionConfiguration']['configuration']['UserParameters'])
+  print(user_parameters)
   allFiles = ['/*']
   invalidation = client.create_invalidation(
-    DistributionId=event['CodePipeline.job']['data']['actionConfiguration']['configuration']['UserParameters']['distributionId'],
+    DistributionId=user_parameters['distributionId'],
     InvalidationBatch={
       'Paths': {
         'Quantity': 1,

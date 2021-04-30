@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Construct, Stack, StackProps, SecretValue, Arn, Duration } from '@aws-cdk/core';
 import { Bucket } from '@aws-cdk/aws-s3';
 import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
@@ -91,7 +92,7 @@ export class GithubNpmWebDistributionPipelineStack extends Stack {
       region: '',
       resourceName: githubNpmWebDistributionPipelineProps.distributionId,
     }, this);
-    const updatePolicy = new PolicyStatement({
+    const distributionPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         'cloudfront:CreateInvalidation',
@@ -100,63 +101,28 @@ export class GithubNpmWebDistributionPipelineStack extends Stack {
         distributionArn,
       ],
     });
-    const functionName = 'UpdateHandler';
-    const logGroupArn = Arn.format({
-      service: 'logs',
-      resource: 'log-group',
-      sep: ':',
-      resourceName: '*',
-    }, this);
-    const logGroupPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:CreateLogGroup',
-      ],
-      resources: [
-        logGroupArn,
-      ],
-    });
-    const logStreamArn = Arn.format({
-      service: 'logs',
-      resource: 'log-group:/aws/lambda/'.concat(functionName),
-      sep: ':',
-      resourceName: '*',
-    }, this);
-    const logStreamPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:CreateLogStream',
-        'logs:PutLogEvents',
-      ],
-      resources: [
-        logStreamArn,
-      ],
-    });
-    const updateHandler = new Function(this, functionName, {
-      functionName,
+    const distributionHandler = new Function(this, 'DistributionHandler', {
       runtime: Runtime.PYTHON_3_8,
-      handler: 'update_cdn.update_handler',
-      code: Code.fromAsset(`${__dirname}/handler`),
+      handler: 'distribution.on_event',
+      code: Code.fromAsset(join(__dirname, 'distribution-handler')),
       timeout: Duration.minutes(1),
       logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
-        updatePolicy,
-        logGroupPolicy,
-        logStreamPolicy,
+        distributionPolicy,
       ],
     });
-    const invokeParams = {
+    const distributionProps = {
       distributionId: githubNpmWebDistributionPipelineProps.distributionId,
     }
-    const cdnUpdate = new LambdaInvokeAction({
-      actionName: 'CdnUpdate',
-      lambda: updateHandler,
-      userParameters: invokeParams,
+    const cacheInvalidate = new LambdaInvokeAction({
+      actionName: 'CacheInvalidate',
+      lambda: distributionHandler,
+      userParameters: distributionProps,
     });
-    const updateStage = {
-      stageName: 'Update',
+    const invalidateStage = {
+      stageName: 'Invalidate',
       actions: [
-        cdnUpdate,
+        cacheInvalidate,
       ],
     };
     new Pipeline(this, 'GithubNpmWebDistributionPipeline', {
@@ -164,7 +130,7 @@ export class GithubNpmWebDistributionPipelineStack extends Stack {
         sourceStage,
         buildStage,
         deployStage,
-        updateStage,
+        invalidateStage,
       ]
     });
   }

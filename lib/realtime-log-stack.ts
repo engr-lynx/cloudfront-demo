@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Construct, Stack, StackProps, Arn, Duration, CustomResource } from '@aws-cdk/core';
 import { Stream, StreamEncryption } from '@aws-cdk/aws-kinesis';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
@@ -84,49 +85,14 @@ export class RealtimeLogStack extends Stack {
         distributionArn,
       ],
     });
-    const functionName = 'LogHandler';
-    const logGroupArn = Arn.format({
-      service: 'logs',
-      resource: 'log-group',
-      sep: ':',
-      resourceName: '*',
-    }, this);
-    const logGroupPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:CreateLogGroup',
-      ],
-      resources: [
-        logGroupArn,
-      ],
-    });
-    const logStreamArn = Arn.format({
-      service: 'logs',
-      resource: 'log-group:/aws/lambda/'.concat(functionName),
-      sep: ':',
-      resourceName: '*',
-    }, this);
-    const logStreamPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:CreateLogStream',
-        'logs:PutLogEvents',
-      ],
-      resources: [
-        logStreamArn,
-      ],
-    });
-    const logHandler = new Function(this, functionName, {
-      functionName,
+    const logHandler = new Function(this, 'LogHandler', {
       runtime: Runtime.PYTHON_3_8,
-      handler: 'realtime_log.on_event',
-      code: Code.fromAsset(`${__dirname}/handler`),
+      handler: 'log.on_event',
+      code: Code.fromAsset(join(__dirname, 'log-handler')),
       timeout: Duration.minutes(1),
       logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
         logPolicy,
-        logGroupPolicy,
-        logStreamPolicy,
       ],
     });
     const logProvider = new Provider(this, 'LogProvider', {
