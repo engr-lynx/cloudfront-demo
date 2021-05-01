@@ -1,6 +1,6 @@
 import { Construct, Stage, StageProps } from '@aws-cdk/core';
-import { GithubNpmWebDistributionPipelineStack } from './github-npm-web-distribution-pipeline-stack';
-import { WebDistributionStack } from './web-distribution-stack';
+import { GithubLinuxCdnPipelineStack } from './github-linux-cdn-pipeline-stack';
+import { CdnStack } from './cdn-stack';
 import { RealtimeMetricStack } from './realtime-metric-stack';
 import { RealtimeLogStack } from './realtime-log-stack';
 
@@ -11,13 +11,11 @@ export class VuepressSiteStage extends Stage {
 
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
-    const website = new WebDistributionStack(this, 'Website');
-    new GithubNpmWebDistributionPipelineStack(this, 'VuepressPipeline', {
+    const website = new CdnStack(this, 'Website');
+    new GithubLinuxCdnPipelineStack(this, 'VuepressPipeline', {
       githubTokenName: 'github-token',
       githubOwner: 'engr-lynx',
       githubRepo: 'vuepress-homepage',
-      npmArtifactDir: 'dist',
-      npmArtifactFiles: '**/*',
       s3Bucket: website.sourceBucket,
       distributionId: website.distributionId,
     });
