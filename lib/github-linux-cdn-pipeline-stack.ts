@@ -64,7 +64,7 @@ export class GithubLinuxCdnPipelineStack extends Stack {
     const linuxTest = new CodeBuildAction({
       actionName: 'LinuxTest',
       project: linuxTestProject,
-      input: buildOutput,
+      input: githubOutput,
       type: CodeBuildActionType.TEST,
     });
     const testStage = {
