@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { Construct, Stack, StackProps, Arn, Duration, CustomResource, PhysicalName } from '@aws-cdk/core';
+import { Construct, Stack, StackProps, Arn, Duration, CustomResource } from '@aws-cdk/core';
 import { Stream, StreamEncryption } from '@aws-cdk/aws-kinesis';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { CfnRealtimeLogConfig } from '@aws-cdk/aws-cloudfront';
@@ -58,7 +58,7 @@ export class RealtimeLogStack extends Stack {
       streamType: 'Kinesis',
     }
     new CfnRealtimeLogConfig(this, 'LogConfig', {
-      name: PhysicalName.GENERATE_IF_NEEDED,
+      name: this.stackName,
       endPoints: [
         endPoint,
       ],
