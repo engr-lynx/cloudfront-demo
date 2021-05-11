@@ -5,14 +5,15 @@ import { Provider } from '@aws-cdk/custom-resources';
 import { RetentionDays } from '@aws-cdk/aws-logs';
 import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 
-export interface RealtimeMetricProps {
+// ToDo: extend StackProps instead
+export interface RealtimeMetricProps extends StackProps {
   distributionId: string,
 }
 
 export class RealtimeMetricStack extends Stack {
 
-  constructor(scope: Construct, id: string, realtimeMetricProps: RealtimeMetricProps, props?: StackProps) {
-    super(scope, id, props);
+  constructor(scope: Construct, id: string, realtimeMetricProps: RealtimeMetricProps) {
+    super(scope, id, realtimeMetricProps);
     const metricPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [

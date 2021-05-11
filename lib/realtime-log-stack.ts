@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { Construct, Stack, StackProps, Arn, Duration, CustomResource } from '@aws-cdk/core';
+import { Construct, Stack, StackProps, Arn, Duration, CustomResource, PhysicalName } from '@aws-cdk/core';
 import { Stream, StreamEncryption } from '@aws-cdk/aws-kinesis';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 import { CfnRealtimeLogConfig } from '@aws-cdk/aws-cloudfront';
@@ -7,7 +7,7 @@ import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
 import { Provider } from '@aws-cdk/custom-resources';
 import { RetentionDays } from '@aws-cdk/aws-logs';
 
-export interface RealtimeLogProps {
+export interface RealtimeLogProps extends StackProps {
   distributionId: string,
   fields: string[],
   samplingRate: number,
@@ -15,24 +15,21 @@ export interface RealtimeLogProps {
 
 export class RealtimeLogStack extends Stack {
 
-  constructor(scope: Construct, id: string, realtimeLogProps: RealtimeLogProps, props?: StackProps) {
-    super(scope, id, props);
-    const streamName = 'LogStream';
-    new Stream(this, streamName, {
-      streamName,
+  constructor(scope: Construct, id: string, realtimeLogProps: RealtimeLogProps) {
+    super(scope, id, realtimeLogProps);
+    const logStream = new Stream(this, 'LogStream', {
       shardCount: 1,
       encryption: StreamEncryption.UNENCRYPTED,
     });
+    
     const streamArn = Arn.format({
       service: 'kinesis',
       resource: 'stream',
-      resourceName: streamName,
+      resourceName: logStream.streamName,
     }, this);
-    const roleName = 'LogRole';
     const rolePrincipal = new ServicePrincipal('cloudfront.amazonaws.com')
-    const logRole = new Role(this, roleName, {
+    const logRole = new Role(this, 'LogRole', {
       assumedBy: rolePrincipal,
-      roleName,
     });
     const streamPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
@@ -50,7 +47,7 @@ export class RealtimeLogStack extends Stack {
     const roleArn = Arn.format({
       service: 'iam',
       resource: 'role',
-      resourceName: roleName,
+      resourceName: logRole.roleName,
     }, this);
     const logConfig = {
       streamArn,
@@ -60,9 +57,8 @@ export class RealtimeLogStack extends Stack {
       kinesisStreamConfig: logConfig,
       streamType: 'Kinesis',
     }
-    const configName = 'LogConfig';
-    new CfnRealtimeLogConfig(this, configName, {
-      name: configName,
+    new CfnRealtimeLogConfig(this, 'LogConfig', {
+      name: PhysicalName.GENERATE_IF_NEEDED,
       endPoints: [
         endPoint,
       ],

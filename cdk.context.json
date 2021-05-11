@@ -1,0 +1,14 @@
+{
+  "infraPipelineId": "CloudFrontDemoInfraPipeline",
+  "InfraPipeline": {
+    "githubTokenName": "github-token",
+    "githubOwner": "engr-lynx",
+    "githubRepo": "cloudfront-demo"
+  },
+  "SitePipeline": {
+    "githubTokenName": "github-token",
+    "githubOwner": "engr-lynx",
+    "githubRepo": "vuepress-homepage",
+    "enableTestStage": true
+  }
+}

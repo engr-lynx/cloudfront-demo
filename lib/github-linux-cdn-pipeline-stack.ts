@@ -3,23 +3,26 @@ import { Construct, Stack, StackProps, SecretValue, Arn, Duration } from '@aws-c
 import { Bucket } from '@aws-cdk/aws-s3';
 import { Function, Runtime, Code } from '@aws-cdk/aws-lambda';
 import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
-import { PipelineProject, LinuxBuildImage, BuildSpec } from '@aws-cdk/aws-codebuild';
+import { PipelineProject, LinuxBuildImage, BuildSpec, Cache } from '@aws-cdk/aws-codebuild';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import { GitHubSourceAction, CodeBuildAction, CodeBuildActionType, S3DeployAction, LambdaInvokeAction } from '@aws-cdk/aws-codepipeline-actions';
 import { RetentionDays } from '@aws-cdk/aws-logs';
 
-export interface GithubLinuxCdnPipelineProps {
+export interface GithubLinuxCdnPipelineProps extends StackProps {
   githubTokenName: string,
   githubOwner: string,
   githubRepo: string,
-  s3Bucket: Bucket,
+  distributionSource: Bucket,
   distributionId: string,
+  pipelineCache: Bucket,
+  enableTestStage: boolean,
 }
 
 export class GithubLinuxCdnPipelineStack extends Stack {
 
-  constructor(scope: Construct, id: string, githubLinuxCdnPipelineProps: GithubLinuxCdnPipelineProps, props?: StackProps) {
-    super(scope, id, props);
+  constructor(scope: Construct, id: string, githubLinuxCdnPipelineProps: GithubLinuxCdnPipelineProps) {
+    super(scope, id, githubLinuxCdnPipelineProps);
+    const pipelineStages = []
     const githubOutput = new Artifact('GithubOutput');
     const githubToken = SecretValue.secretsManager(githubLinuxCdnPipelineProps.githubTokenName);
     const githubSource = new GitHubSourceAction({
@@ -35,16 +38,22 @@ export class GithubLinuxCdnPipelineStack extends Stack {
         githubSource,
       ],
     };
+    pipelineStages.push(sourceStage);
+    const cdnPipelineCache = new Bucket(this, 'CdnPipelineCache');
+    const buildCache = Cache.bucket(cdnPipelineCache, {
+      prefix: 'build'
+    });
     const linuxEnvironment = {
       buildImage: LinuxBuildImage.STANDARD_5_0,
     };
-    const linuxBuildProject = new PipelineProject(this, 'LinuxBuildProject', {
+    const buildProject = new PipelineProject(this, 'BuildProject', {
       environment: linuxEnvironment,
+      cache: buildCache,
     });
     const buildOutput = new Artifact('BuildOutput');
     const linuxBuild = new CodeBuildAction({
       actionName: 'LinuxBuild',
-      project: linuxBuildProject,
+      project: buildProject,
       input: githubOutput,
       outputs: [
         buildOutput,
@@ -56,27 +65,35 @@ export class GithubLinuxCdnPipelineStack extends Stack {
         linuxBuild,
       ],
     };
-    const testSpec = BuildSpec.fromSourceFilename('testspec.yml');
-    const linuxTestProject = new PipelineProject(this, 'LinuxTestProject', {
-      buildSpec: testSpec,
-      environment: linuxEnvironment,
-    });
-    const linuxTest = new CodeBuildAction({
-      actionName: 'LinuxTest',
-      project: linuxTestProject,
-      input: githubOutput,
-      type: CodeBuildActionType.TEST,
-    });
-    const testStage = {
-      stageName: 'Test',
-      actions: [
-        linuxTest,
-      ],
+    pipelineStages.push(buildStage);
+    if (githubLinuxCdnPipelineProps.enableTestStage) {
+      const testSpec = BuildSpec.fromSourceFilename('testspec.yml');
+      const testCache = Cache.bucket(cdnPipelineCache, {
+        prefix: 'test'
+      });
+      const testProject = new PipelineProject(this, 'TestProject', {
+        buildSpec: testSpec,
+        environment: linuxEnvironment,
+        cache: testCache,
+      });
+      const linuxTest = new CodeBuildAction({
+        actionName: 'LinuxTest',
+        project: testProject,
+        input: githubOutput,
+        type: CodeBuildActionType.TEST,
+      });
+      const testStage = {
+        stageName: 'Test',
+        actions: [
+          linuxTest,
+        ],
+      };
+      pipelineStages.push(testStage);
     };
     const s3Deploy = new S3DeployAction({
       actionName: 'S3Deploy',
       input: buildOutput,
-      bucket: githubLinuxCdnPipelineProps.s3Bucket,
+      bucket: githubLinuxCdnPipelineProps.distributionSource,
     });
     const deployStage = {
       stageName: 'Deploy',
@@ -84,6 +101,7 @@ export class GithubLinuxCdnPipelineStack extends Stack {
         s3Deploy,
       ],
     };
+    pipelineStages.push(deployStage);
     const distributionArn = Arn.format({
       service: 'cloudfront',
       resource: 'distribution',
@@ -99,10 +117,11 @@ export class GithubLinuxCdnPipelineStack extends Stack {
         distributionArn,
       ],
     });
+    const distributionCode = Code.fromAsset(join(__dirname, 'distribution-handler'));
     const distributionHandler = new Function(this, 'DistributionHandler', {
       runtime: Runtime.PYTHON_3_8,
       handler: 'distribution.on_event',
-      code: Code.fromAsset(join(__dirname, 'distribution-handler')),
+      code: distributionCode,
       timeout: Duration.minutes(1),
       logRetention: RetentionDays.ONE_DAY,
       initialPolicy: [
@@ -123,16 +142,9 @@ export class GithubLinuxCdnPipelineStack extends Stack {
         cacheInvalidate,
       ],
     };
-    const pipelineName = 'GithubLinuxCdnPipeline';
-    new Pipeline(this, pipelineName, {
-      pipelineName,
-      stages: [
-        sourceStage,
-        buildStage,
-        testStage,
-        deployStage,
-        invalidateStage,
-      ],
+    pipelineStages.push(invalidateStage);
+    new Pipeline(this, 'GithubLinuxCdnPipeline', {
+      stages: pipelineStages,
     });
   }
 
