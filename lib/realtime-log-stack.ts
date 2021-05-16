@@ -13,6 +13,7 @@ export interface RealtimeLogProps extends StackProps {
   samplingRate: number,
 }
 
+// ToDo: rename (CdnRtLogStack)
 export class RealtimeLogStack extends Stack {
 
   constructor(scope: Construct, id: string, realtimeLogProps: RealtimeLogProps) {

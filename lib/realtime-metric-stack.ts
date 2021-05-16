@@ -10,6 +10,7 @@ export interface RealtimeMetricProps extends StackProps {
   distributionId: string,
 }
 
+// ToDo: rename (CdnRtMetricStack)
 export class RealtimeMetricStack extends Stack {
 
   constructor(scope: Construct, id: string, realtimeMetricProps: RealtimeMetricProps) {

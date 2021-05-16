@@ -1,14 +1,13 @@
 {
-  "infraPipelineId": "CloudFrontDemoInfraPipeline",
-  "InfraPipeline": {
-    "githubTokenName": "github-token",
-    "githubOwner": "engr-lynx",
-    "githubRepo": "cloudfront-demo"
+  "archiPipelineId": "CloudFrontDemoArchiPipeline",
+  "ArchiPipeline": {
+    "codeCommitRepoName": "cloudfront-demo-archi",
+    "codeCommitCreate": true,
+    "manualApproval": true
   },
   "SitePipeline": {
-    "githubTokenName": "github-token",
-    "githubOwner": "engr-lynx",
-    "githubRepo": "vuepress-homepage",
-    "enableTestStage": true
+    "codeCommitRepoName": "vuepress-sample",
+    "codeCommitCreate": true,
+    "testSpecFilename": "testspec.yml"
   }
 }

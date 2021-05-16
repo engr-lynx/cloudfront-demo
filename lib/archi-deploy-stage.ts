@@ -1,14 +1,15 @@
 import { Construct, Stage, StageProps } from '@aws-cdk/core';
 import { PipelineCacheStack } from './pipeline-cache-stack';
-import { GithubLinuxCdnPipelineStack } from './github-linux-cdn-pipeline-stack';
+import { RepoCdnPipelineStack } from './repo-cdn-pipeline-stack';
 import { CdnStack } from './cdn-stack';
 import { RealtimeMetricStack } from './realtime-metric-stack';
 import { RealtimeLogStack } from './realtime-log-stack';
+import { buildRepoProps } from './pipeline-helper';
 
 /**
- * Deployable unit of site
+ * Deployable unit of entire architecture
  */
-export class SiteDeployStage extends Stage {
+export class ArchiDeployStage extends Stage {
 
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
@@ -21,11 +22,10 @@ export class SiteDeployStage extends Stage {
     const sitePipelineCache = new PipelineCacheStack(this, 'SitePipelineCache', {
       env: siteEnv,
     });
-    const sitePipelineContext = this.node.tryGetContext('SitePipeline');  
-    new GithubLinuxCdnPipelineStack(this, 'SitePipeline', {
-      githubTokenName: sitePipelineContext.githubTokenName,
-      githubOwner: sitePipelineContext.githubOwner,
-      githubRepo: sitePipelineContext.githubRepo,
+    const sitePipelineContext = this.node.tryGetContext('SitePipeline');
+    const siteRepoProps = buildRepoProps(sitePipelineContext);
+    new RepoCdnPipelineStack(this, 'SitePipeline', {
+      repoProps: siteRepoProps,
       distributionSource: site.sourceBucket,
       distributionId: site.distributionId,
       pipelineCache: sitePipelineCache.bucket,
