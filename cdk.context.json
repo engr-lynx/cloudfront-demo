@@ -1,13 +1,16 @@
 {
   "archiPipelineId": "CloudFrontDemoArchiPipeline",
   "ArchiPipeline": {
-    "codeCommitRepoName": "cloudfront-demo-archi",
-    "codeCommitCreate": true,
-    "manualApproval": true
+    "repoKind": "CodeCommit",
+    "repoName": "cloudfront-demo-archi",
+    "createRepo": true,
+    "enableApproval": true
   },
   "SitePipeline": {
-    "codeCommitRepoName": "vuepress-sample",
-    "codeCommitCreate": true,
+    "repoKind": "CodeCommit",
+    "repoName": "vuepress-sample",
+    "createRepo": true,
+    "enableTest": true,
     "testSpecFilename": "testspec.yml"
   }
 }
