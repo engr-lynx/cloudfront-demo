@@ -4,7 +4,7 @@ import { RepoCdnPipelineStack } from './repo-cdn-pipeline-stack';
 import { CdnStack } from './cdn-stack';
 import { RealtimeMetricStack } from './realtime-metric-stack';
 import { RealtimeLogStack } from './realtime-log-stack';
-import { buildRepoProps } from './pipeline-helper';
+import { buildRepoProps, buildStageProps } from './pipeline-helper';
 
 /**
  * Deployable unit of entire architecture
@@ -24,12 +24,13 @@ export class ArchiDeployStage extends Stage {
     });
     const sitePipelineContext = this.node.tryGetContext('SitePipeline');
     const siteRepoProps = buildRepoProps(sitePipelineContext);
+    const siteStageProps = buildStageProps(sitePipelineContext);
     new RepoCdnPipelineStack(this, 'SitePipeline', {
       repoProps: siteRepoProps,
+      stageProps: siteStageProps,
       distributionSource: site.sourceBucket,
       distributionId: site.distributionId,
       pipelineCache: sitePipelineCache.bucket,
-      enableTestStage: sitePipelineContext.enableTestStage,
       env: siteEnv,
     });
     new RealtimeMetricStack(this, 'RealtimeMetric', {
